@@ -1,0 +1,5 @@
+{
+  "name": "Citizen Admin Dashboard",
+  "description": "A robust admin dashboard for managing civic complaints, user data, feedback, and contacts, offering analytics and reporting features.",
+  "requestFramePermissions": []
+}
