@@ -3,8 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Card from '../../components/common/Card.jsx';
 import Button from '../../components/common/Button.jsx';
 import InputField from '../../components/common/InputField.jsx';
+import LocationAutocomplete from '../../components/common/LocationAutocomplete.jsx';
+import PhoneNumberInput from '../../components/common/PhoneNumberInput.jsx';
+import SimpleCaptcha from '../../components/common/SimpleCaptcha.jsx';
 import LoadingSpinner from '../../components/common/LoadingSpinner.jsx';
-import { createUser, getUserById, updateUser } from '../../utils/api.js';
+import { createUser, getUserById, updateUser, getLocationSuggestions } from '../../utils/api.js';
 import { USER_ROLES } from '../../constants.js';
 
 const UserForm = () => {
@@ -16,6 +19,7 @@ const UserForm = () => {
     fullName: '',
     email: '',
     password: '',
+    confirmPassword: '',
     phone: '',
     location: '',
     work: '',
@@ -30,6 +34,7 @@ const UserForm = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
 
   const volunteeringTypeOptions = [
     'Environmental Cleanup',
@@ -89,14 +94,32 @@ const UserForm = () => {
     fetchUserData();
   }, [fetchUserData]);
 
+  // Real-time password match validation
+  useEffect(() => {
+    if (!isEditMode && formData.password && formData.confirmPassword) {
+      if (formData.password !== formData.confirmPassword) {
+        setErrors((prev) => ({ ...prev, confirmPassword: 'Passwords do not match' }));
+      } else {
+        setErrors((prev) => ({ ...prev, confirmPassword: '' }));
+      }
+    }
+  }, [formData.password, formData.confirmPassword, isEditMode]);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
-    // Clear error for the field being edited
-    setErrors((prev) => ({ ...prev, [name]: '' }));
+    // Clear error for the field being edited and related fields
+    setErrors((prev) => {
+      const newErrors = { ...prev, [name]: '' };
+      // Also clear confirmPassword error when either password field changes
+      if (name === 'password' || name === 'confirmPassword') {
+        newErrors.confirmPassword = '';
+      }
+      return newErrors;
+    });
   };
 
   const handleVolunteeringTypeChange = (e) => {
@@ -117,7 +140,7 @@ const UserForm = () => {
     if (!formData.fullName.trim()) newErrors.fullName = 'Full Name is required';
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
     }
     if (!isEditMode && !formData.password.trim()) {
@@ -125,13 +148,12 @@ const UserForm = () => {
     } else if (!isEditMode && formData.password.trim().length < 6) {
       newErrors.password = 'Password must be at least 6 characters long';
     }
-    if (formData.phone && !/^[\d\s\-\+\(\)]{7,}$/.test(formData.phone.replace(/\D/g, ''))) {
-      newErrors.phone = 'Phone number must contain at least 7 digits';
+    if (!isEditMode && formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
     }
-    if (formData.age && (isNaN(formData.age) || formData.age < 0 || formData.age > 120)) {
-      newErrors.age = 'Age must be a valid number between 0 and 120';
+    if (!isEditMode && !captchaVerified) {
+      newErrors.captcha = 'Please verify CAPTCHA';
     }
-    setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
@@ -145,6 +167,7 @@ const UserForm = () => {
     setLoading(true);
     try {
       const dataToSubmit = { ...formData };
+      delete dataToSubmit.confirmPassword; // Don't send confirmPassword to API
       if (isEditMode && !formData.password) {
         delete dataToSubmit.password; // Don't send empty password on edit if not changed
       }
@@ -189,42 +212,55 @@ const UserForm = () => {
               placeholder="Enter full name"
               required
             />
-            <InputField
-              label="Email"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              error={errors.email}
-              placeholder="Enter email address"
-              required
-            />
-            {!isEditMode && (
+            <div>
               <InputField
-                label="Password"
-                name="password"
-                type="password"
-                value={formData.password}
+                label="Email"
+                name="email"
+                type="email"
+                value={formData.email}
                 onChange={handleChange}
-                error={errors.password}
-                placeholder="Enter password"
-                required={!isEditMode}
+                error={errors.email}
+                placeholder="Enter email address"
+                required
               />
+            </div>
+            {!isEditMode && (
+              <>
+                <InputField
+                  label="Password"
+                  name="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  error={errors.password}
+                  placeholder="Enter password"
+                  required={!isEditMode}
+                />
+                <InputField
+                  label="Confirm Password"
+                  name="confirmPassword"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  error={errors.confirmPassword}
+                  placeholder="Confirm password"
+                  required={!isEditMode}
+                />
+              </>
             )}
-            <InputField
+            <PhoneNumberInput
               label="Phone Number"
-              name="phone"
-              type="tel"
               value={formData.phone}
               onChange={handleChange}
               error={errors.phone}
-              placeholder="e.g., 1234567890"
+              placeholder="Enter phone number"
             />
-            <InputField
+            <LocationAutocomplete
               label="Location (City)"
               name="location"
               value={formData.location}
               onChange={handleChange}
+              getSuggestions={getLocationSuggestions}
               error={errors.location}
               placeholder="e.g., New York"
             />
@@ -307,6 +343,14 @@ const UserForm = () => {
               options={roleOptions}
               required
             />
+            {!isEditMode && (
+              <div className="md:col-span-2">
+                <SimpleCaptcha
+                  onVerify={setCaptchaVerified}
+                  error={errors.captcha}
+                />
+              </div>
+            )}
             {isEditMode && (
               <InputField
                 label="Account Status"

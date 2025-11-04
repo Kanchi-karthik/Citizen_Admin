@@ -16,6 +16,12 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ["user", "admin"], default: "user" },
   isActive: { type: Boolean, default: true }, // Added for soft deletion/deactivation
   profile_pic: { type: String, default: 'https://picsum.photos/200' }, // Placeholder profile picture
+  emailVerified: { type: Boolean, default: false },
+  phoneVerified: { type: Boolean, default: false },
+  emailOtp: { type: String },
+  emailOtpExpiry: { type: Date },
+  phoneOtp: { type: String },
+  phoneOtpExpiry: { type: Date },
 }, { timestamps: true });
 
 // Generate sequential custom userId like USR001 or ADM001

@@ -155,4 +155,51 @@ export const getAnalytics = async () => {
   }
 };
 
+// OTP and Verification
+export const sendEmailOTP = async (email) => {
+  try {
+    const response = await api.post('/users/send-email-otp', { email });
+    return response.data;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const verifyEmailOTP = async (email, otp) => {
+  try {
+    const response = await api.post('/users/verify-email-otp', { email, otp });
+    return response.data;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const sendPhoneOTP = async (phone) => {
+  try {
+    const response = await api.post('/users/send-phone-otp', { phone });
+    return response.data;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const verifyPhoneOTP = async (phone, otp) => {
+  try {
+    const response = await api.post('/users/verify-phone-otp', { phone, otp });
+    return response.data;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+// Location Autocomplete
+export const getLocationSuggestions = async (query) => {
+  try {
+    const response = await api.get('/users/locations', { params: { query } });
+    return response.data;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
 export default api;

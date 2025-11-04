@@ -33,7 +33,9 @@ const App = () => {
                   <i data-lucide="menu" className="h-6 w-6"></i>
                 )}
               </button>
-              <h1 className="text-lg md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-500 ml-2 md:ml-4 truncate">Citizen Admin Dashboard</h1>
+              <Link to="/" className="text-lg md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-500 ml-2 md:ml-4 truncate hover:opacity-80 transition-opacity cursor-pointer">
+                Citizen Admin Dashboard
+              </Link>
             </div>
           </header>
           <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-6 bg-gradient-to-br from-slate-50 to-slate-100 w-full">
